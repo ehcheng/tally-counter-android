@@ -1,0 +1,12 @@
+*.iml
+*.jks
+.DS_Store
+.cxx/
+.externalNativeBuild/
+.gradle/
+.idea/
+app/build/
+build/
+captures/
+local.properties
+tally-release.jks
