@@ -23,7 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,14 +68,8 @@ fun EditScreen(
     var stepText by rememberSaveable { mutableStateOf("1") }
     var startingCountText by rememberSaveable { mutableStateOf("0") }
     var startDateText by rememberSaveable { mutableStateOf("") }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) } // not saveable — derived from existingCounter
-
-    // Date validation
-    val dateError = remember(startDateText) {
-        if (startDateText.isBlank()) null
-        else try { LocalDate.parse(startDateText); null }
-        catch (_: DateTimeParseException) { "Invalid date (use YYYY-MM-DD)" }
-    }
 
     LaunchedEffect(existingCounter) {
         if (existingCounter != null && !loaded) {
@@ -104,7 +101,7 @@ fun EditScreen(
                             val date = startDateText.ifBlank { null }
                             if (name.isNotBlank()) onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date)
                         },
-                        enabled = name.isNotBlank() && dateError == null
+                        enabled = name.isNotBlank()
                     ) {
                         Icon(Icons.Default.Check, contentDescription = "Save")
                     }
@@ -154,22 +151,75 @@ fun EditScreen(
             }
 
             // Start date (for migration from other apps)
-            OutlinedTextField(
-                value = startDateText,
-                onValueChange = { startDateText = it },
-                label = { Text("Start Date (optional)") },
-                supportingText = {
-                    Text(
-                        dateError ?: "When you started tracking (YYYY-MM-DD)",
-                        color = if (dateError != null) MaterialTheme.colorScheme.error
-                               else LocalContentColor.current
-                    )
-                },
-                isError = dateError != null,
-                singleLine = true,
-                placeholder = { Text("e.g. 2024-06-15") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            val displayDate = if (startDateText.isNotBlank()) {
+                try {
+                    LocalDate.parse(startDateText).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+                } catch (_: Exception) { startDateText }
+            } else "Not set"
+
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = displayDate,
+                    onValueChange = {},
+                    label = { Text("Start Date (optional)") },
+                    supportingText = { Text("When you started tracking") },
+                    readOnly = true,
+                    enabled = false,
+                    singleLine = true,
+                    trailingIcon = {
+                        if (startDateText.isNotBlank()) {
+                            IconButton(onClick = { startDateText = "" }) {
+                                Text("✕", fontSize = 16.sp)
+                            }
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                // Transparent overlay to capture taps (OutlinedTextField intercepts clicks even when readOnly)
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showDatePicker = true }
+                )
+            }
+
+            if (showDatePicker) {
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = if (startDateText.isNotBlank()) {
+                        try {
+                            LocalDate.parse(startDateText)
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                                .toEpochMilli()
+                        } catch (_: Exception) { null }
+                    } else null
+                )
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            datePickerState.selectedDateMillis?.let { millis ->
+                                startDateText = Instant.ofEpochMilli(millis)
+                                    .atZone(ZoneOffset.UTC)
+                                    .toLocalDate()
+                                    .toString()
+                            }
+                            showDatePicker = false
+                        }) { Text("OK") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
 
             // Icon picker
             Text("Icon", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
