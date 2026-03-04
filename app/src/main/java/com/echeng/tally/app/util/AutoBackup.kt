@@ -2,6 +2,7 @@ package com.echeng.tally.app.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.media.MediaScannerConnection
 import android.os.Environment
 import android.provider.MediaStore
 import com.echeng.tally.app.data.db.AppDatabase
@@ -88,17 +89,8 @@ object AutoBackup {
             val file = File(backupDir, filename)
             file.writeText(json)
 
-            // Also notify MediaStore so it shows in file managers
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DATA, file.absolutePath)
-                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
-            }
-            try {
-                context.contentResolver.insert(MediaStore.Files.getContentUri("external"), values)
-            } catch (_: Exception) {
-                // MediaStore insert can fail if already indexed, that's fine
-            }
+            // Notify MediaStore so files show in file pickers immediately
+            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf("application/json"), null)
 
             // Prune old downloads backups too
             backupDir.listFiles { f -> isBackupFile(f) }

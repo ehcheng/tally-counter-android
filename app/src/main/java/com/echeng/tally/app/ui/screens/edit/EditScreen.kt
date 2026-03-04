@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.activity.compose.BackHandler
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -69,19 +70,66 @@ fun EditScreen(
     var startingCountText by rememberSaveable { mutableStateOf("0") }
     var startDateText by rememberSaveable { mutableStateOf("") }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) } // not saveable — derived from existingCounter
+
+    // Snapshot original values AFTER loading completes
+    var originalName by remember { mutableStateOf(existingCounter?.name ?: "") }
+    var originalIcon by remember { mutableStateOf(existingCounter?.icon ?: "💪") }
+    var originalColorHex by remember { mutableStateOf(existingCounter?.let { findCounterColor(it.colorHex)?.hex ?: it.colorHex } ?: "#FFFF3B5C") }
+    var originalStep by remember { mutableStateOf(existingCounter?.stepValue?.toString() ?: "1") }
+    var originalStartingCount by remember { mutableStateOf(existingCounter?.startingCount?.toString() ?: "0") }
+    var originalStartDate by remember { mutableStateOf(existingCounter?.startDate ?: "") }
+
+    val hasChanges = loaded && (name != originalName || icon != originalIcon || selectedColorHex != originalColorHex ||
+            stepText != originalStep || startingCountText != originalStartingCount || startDateText != originalStartDate)
+
+    // For new counters, track changes once the user modifies anything from defaults
+    val hasNewCounterChanges = !isEdit && name.isNotBlank()
+
+    // Intercept back button when there are unsaved changes
+    BackHandler(enabled = hasChanges || hasNewCounterChanges) {
+        showDiscardDialog = true
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard changes?") },
+            text = { Text("You have unsaved changes. Are you sure you want to go back?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        onBack()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Discard") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Keep Editing") }
+            }
+        )
+    }
 
     LaunchedEffect(existingCounter) {
         if (existingCounter != null && !loaded) {
             name = existingCounter.name
             icon = existingCounter.icon
-            // Normalize via centralized color lookup
             selectedColorHex = findCounterColor(existingCounter.colorHex)?.hex ?: existingCounter.colorHex
             stepText = existingCounter.stepValue.toString()
             startingCountText = existingCounter.startingCount.toString()
             startDateText = existingCounter.startDate ?: ""
+            // Snapshot originals for change detection
+            originalName = name
+            originalIcon = icon
+            originalColorHex = selectedColorHex
+            originalStep = stepText
+            originalStartingCount = startingCountText
+            originalStartDate = startDateText
             loaded = true
         }
+        if (existingCounter == null) loaded = true // new counter
     }
 
     Scaffold(
@@ -89,7 +137,9 @@ fun EditScreen(
             TopAppBar(
                 title = { Text(if (isEdit) "Edit Counter" else "New Counter", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        if (hasChanges || hasNewCounterChanges) showDiscardDialog = true else onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
