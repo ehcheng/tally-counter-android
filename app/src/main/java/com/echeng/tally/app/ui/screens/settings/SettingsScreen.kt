@@ -287,7 +287,7 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             Text(
-                "Tally v1.0.2",
+                "Tally v1.0.3",
                 fontSize = 12.sp,
                 color = TextSecondary,
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 8.dp)
