@@ -477,17 +477,19 @@ fun ChartSection(entries: List<CounterEntry>, counterColor: Color, rangeDays: In
     data class ChartPoint(val date: String, val cumulativeTotal: Int)
 
     val chartData = remember(entries, rangeDays, startingCount) {
-        val allSorted = entries.sortedBy { it.date }
+        // Aggregate entries by date, then build cumulative totals
+        val dailyTotals = entries.groupBy { it.date }
+            .mapValues { (_, dayEntries) -> dayEntries.sumOf { it.count } }
+            .toSortedMap()
 
-        // Build cumulative totals across ALL entries (need full history for correct running total)
         val cumulativeByDate = mutableListOf<ChartPoint>()
         var cumulative = startingCount
-        allSorted.forEach { e ->
-            cumulative += e.count
-            cumulativeByDate.add(ChartPoint(e.date, cumulative))
+        dailyTotals.forEach { (date, dayTotal) ->
+            cumulative += dayTotal
+            cumulativeByDate.add(ChartPoint(date, cumulative))
         }
 
-        // Now filter to the requested range
+        // Filter to the requested range
         if (rangeDays > 0) {
             val cutoff = LocalDate.now().minusDays(rangeDays.toLong()).toString()
             cumulativeByDate.filter { it.date >= cutoff }
