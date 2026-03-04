@@ -519,7 +519,7 @@ fun ChartSection(entries: List<CounterEntry>, counterColor: Color, rangeDays: In
             bottomAxis = HorizontalAxis.rememberBottom(
                 valueFormatter = { _, value, _ ->
                     val idx = value.toInt()
-                    if (idx in dateLabels.indices) dateLabels[idx] else ""
+                    if (idx in dateLabels.indices) dateLabels[idx] else " "
                 }
             ),
         ),
