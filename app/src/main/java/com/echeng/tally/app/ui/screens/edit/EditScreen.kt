@@ -155,37 +155,41 @@ fun EditScreen(
                 try {
                     LocalDate.parse(startDateText).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
                 } catch (_: Exception) { startDateText }
-            } else "Not set"
+            } else null
 
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = displayDate,
-                    onValueChange = {},
-                    label = { Text("Start Date (optional)") },
-                    supportingText = { Text("When you started tracking") },
-                    readOnly = true,
-                    enabled = false,
-                    singleLine = true,
-                    trailingIcon = {
-                        if (startDateText.isNotBlank()) {
-                            IconButton(onClick = { startDateText = "" }) {
-                                Text("✕", fontSize = 16.sp)
-                            }
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                // Transparent overlay to capture taps (OutlinedTextField intercepts clicks even when readOnly)
-                Box(
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Start Date (optional)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
                     modifier = Modifier
-                        .matchParentSize()
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                         .clickable { showDatePicker = true }
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = displayDate ?: "Tap to select date",
+                        color = if (displayDate != null) MaterialTheme.colorScheme.onSurface
+                               else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 16.sp
+                    )
+                    if (displayDate != null) {
+                        Text(
+                            text = "✕",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.clickable { startDateText = "" }
+                        )
+                    }
+                }
+                Text(
+                    "When you started tracking",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
                 )
             }
 
