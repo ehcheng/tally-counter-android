@@ -89,8 +89,11 @@ object AutoBackup {
             val file = File(backupDir, filename)
             file.writeText(json)
 
-            // Notify MediaStore so files show in file pickers immediately
-            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf("application/json"), null)
+            // Scan all files in backup dir so they show in file pickers
+            val allFiles = backupDir.listFiles { f -> isBackupFile(f) }
+                ?.map { it.absolutePath }?.toTypedArray() ?: arrayOf(file.absolutePath)
+            val mimeTypes = Array(allFiles.size) { "application/json" }
+            MediaScannerConnection.scanFile(context, allFiles, mimeTypes, null)
 
             // Prune old downloads backups too
             backupDir.listFiles { f -> isBackupFile(f) }
