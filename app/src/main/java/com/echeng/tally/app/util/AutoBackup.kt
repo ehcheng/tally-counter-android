@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 object AutoBackup {
-    private const val MAX_INTERNAL_BACKUPS = 7
+    private const val MAX_BACKUPS = 10
     private const val INTERNAL_DIR = "backups"
     private const val DOWNLOADS_SUBDIR = "tally-auto-backups"
     private const val FILE_PREFIX = "tally-"
@@ -76,7 +76,7 @@ object AutoBackup {
 
         backupDir.listFiles { f -> isBackupFile(f) }
             ?.sortedByDescending { it.lastModified() }
-            ?.drop(MAX_INTERNAL_BACKUPS)
+            ?.drop(MAX_BACKUPS)
             ?.forEach { it.delete() }
     }
 
@@ -98,7 +98,7 @@ object AutoBackup {
             // Prune old downloads backups too
             backupDir.listFiles { f -> isBackupFile(f) }
                 ?.sortedByDescending { it.lastModified() }
-                ?.drop(MAX_INTERNAL_BACKUPS)
+                ?.drop(MAX_BACKUPS)
                 ?.forEach { it.delete() }
 
             android.util.Log.i("AutoBackup", "Saved to Downloads: ${file.absolutePath}")
