@@ -42,7 +42,21 @@ Get the latest APK from [**Releases**](https://github.com/ehcheng/tally-counter-
 
 ## 📱 Screenshots
 
-*Coming soon*
+<p align="center">
+  <img src="assets/tally_screenshot1.png" width="270" alt="Home screen with multiple counters" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="assets/tally_screenshot2.png" width="270" alt="Detail view with chart and stats" />
+</p>
+
+## 🎬 Demo
+
+<div align="center">
+  <a href="https://youtube.com/shorts/LqvIMn9NhiQ">
+    <img src="https://img.youtube.com/vi/LqvIMn9NhiQ/0.jpg" width="270" alt="Tally demo video" />
+  </a>
+  <br/>
+  <em>▶️ Tap to watch demo</em>
+</div>
 
 ## 🏗️ Build
 
