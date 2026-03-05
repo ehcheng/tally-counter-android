@@ -6,11 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.echeng.tally.app.data.db.AppDatabase
 import com.echeng.tally.app.data.entity.Counter
 import com.echeng.tally.app.data.repository.CounterRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val db = AppDatabase.getInstance(app)
     private val repo = CounterRepository(db.counterDao(), db.counterEntryDao())
@@ -24,12 +29,27 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _totalCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
     val totalCounts: StateFlow<Map<Long, Int>> = _totalCounts.asStateFlow()
 
-    init {
-        val today = LocalDate.now().format(dateFormatter)
+    /**
+     * Emits today's date string, then re-emits at midnight when the day rolls over.
+     * Ensures todayCounts always queries the current date, even if the app stays alive overnight.
+     */
+    private fun todayFlow(): Flow<String> = flow {
+        while (true) {
+            val today = LocalDate.now().format(dateFormatter)
+            emit(today)
+            val now = LocalDateTime.now()
+            val midnight = now.toLocalDate().plusDays(1).atStartOfDay()
+            val delayMs = Duration.between(now, midnight).toMillis() + 100L
+            delay(delayMs)
+        }
+    }
 
-        // Single reactive flow for all today counts (replaces N per-counter queries)
+    init {
+        // Reactive today counts — switches DB query at midnight automatically
         viewModelScope.launch {
-            db.counterEntryDao().getCountsByDate(today).collect { entries ->
+            todayFlow().flatMapLatest { today ->
+                db.counterEntryDao().getCountsByDate(today)
+            }.collect { entries ->
                 _todayCounts.value = entries.associate { it.counterId to it.count }
             }
         }

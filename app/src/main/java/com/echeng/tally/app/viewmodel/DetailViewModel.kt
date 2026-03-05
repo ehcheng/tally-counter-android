@@ -7,15 +7,28 @@ import com.echeng.tally.app.data.db.AppDatabase
 import com.echeng.tally.app.data.entity.Counter
 import com.echeng.tally.app.data.entity.CounterEntry
 import com.echeng.tally.app.data.repository.CounterRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class DetailViewModel(app: Application) : AndroidViewModel(app) {
     private val db = AppDatabase.getInstance(app)
     private val repo = CounterRepository(db.counterDao(), db.counterEntryDao())
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+    /** Emits today's date string, re-emits at midnight. */
+    private fun todayFlow(): Flow<String> = flow {
+        while (true) {
+            emit(LocalDate.now().format(dateFormatter))
+            val now = LocalDateTime.now()
+            val midnight = now.toLocalDate().plusDays(1).atStartOfDay()
+            delay(Duration.between(now, midnight).toMillis() + 100L)
+        }
+    }
 
     private val _counter = MutableStateFlow<Counter?>(null)
     val counter: StateFlow<Counter?> = _counter.asStateFlow()
@@ -32,14 +45,17 @@ class DetailViewModel(app: Application) : AndroidViewModel(app) {
     fun loadCounter(counterId: Long) {
         viewModelScope.launch {
             _counter.value = repo.getCounter(counterId)
-            repo.getEntries(counterId).collect { entryList ->
+            // Combine entries with reactive date so todayCount resets at midnight
+            combine(
+                repo.getEntries(counterId),
+                todayFlow()
+            ) { entryList, today ->
                 _entries.value = entryList
                 val entriesSum = entryList.sumOf { it.count }
                 val starting = _counter.value?.startingCount ?: 0
                 _totalCount.value = starting + entriesSum
-                val today = LocalDate.now().format(dateFormatter)
                 _todayCount.value = entryList.find { it.date == today }?.count ?: 0
-            }
+            }.collect()
         }
     }
 
