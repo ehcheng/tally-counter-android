@@ -1,0 +1,115 @@
+{
+  "version": 2,
+  "exportedAt": 1772924956658,
+  "counters": [
+    {
+      "id": 2,
+      "name": "Pushups 2026",
+      "icon": "💪",
+      "colorHex": "#FFFF3B5C",
+      "stepValue": 10,
+      "startingCount": 7330,
+      "startDate": "2026-01-01",
+      "targetCount": 50000,
+      "deadlineDate": "2026-12-31",
+      "sortOrder": 1,
+      "createdAt": 1772505098397
+    },
+    {
+      "id": 3,
+      "name": "Sit-ups 2026",
+      "icon": "🧎",
+      "colorHex": "#FF007AFF",
+      "stepValue": 10,
+      "startingCount": 7140,
+      "startDate": "2026-01-01",
+      "targetCount": 50000,
+      "deadlineDate": "2026-12-31",
+      "sortOrder": 2,
+      "createdAt": 1772505132085
+    },
+    {
+      "id": 4,
+      "name": "Pull-ups 2026",
+      "icon": "🏋️",
+      "colorHex": "#FF34C759",
+      "stepValue": 1,
+      "startingCount": 36,
+      "startDate": "2026-01-01",
+      "sortOrder": 3,
+      "createdAt": 1772505150230
+    }
+  ],
+  "entries": [
+    {
+      "counterId": 2,
+      "date": "2026-03-07",
+      "count": 140
+    },
+    {
+      "counterId": 3,
+      "date": "2026-03-07",
+      "count": 150
+    },
+    {
+      "counterId": 2,
+      "date": "2026-03-06",
+      "count": 50
+    },
+    {
+      "counterId": 3,
+      "date": "2026-03-06",
+      "count": 60
+    },
+    {
+      "counterId": 2,
+      "date": "2026-03-05",
+      "count": 60
+    },
+    {
+      "counterId": 3,
+      "date": "2026-03-05",
+      "count": 80
+    },
+    {
+      "counterId": 4,
+      "date": "2026-03-05",
+      "count": 0
+    },
+    {
+      "counterId": 2,
+      "date": "2026-03-04",
+      "count": 220
+    },
+    {
+      "counterId": 3,
+      "date": "2026-03-04",
+      "count": 200
+    },
+    {
+      "counterId": 4,
+      "date": "2026-03-04",
+      "count": 4
+    },
+    {
+      "counterId": 2,
+      "date": "2026-03-03",
+      "count": 40
+    },
+    {
+      "counterId": 3,
+      "date": "2026-03-03",
+      "count": 10
+    },
+    {
+      "counterId": 2,
+      "date": "2026-03-02",
+      "count": 50
+    },
+    {
+      "counterId": 3,
+      "date": "2026-03-02",
+      "count": 50
+    }
+  ]
+}
