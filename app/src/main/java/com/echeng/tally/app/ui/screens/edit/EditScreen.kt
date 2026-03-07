@@ -62,7 +62,7 @@ private val EmojiOptions = listOf(
 fun EditScreen(
     existingCounter: Counter?,
     isNewCounter: Boolean = false,
-    onSave: (name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int, startDate: String?) -> Unit,
+    onSave: (name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int, startDate: String?, targetCount: Int?, deadlineDate: String?) -> Unit,
     onBack: () -> Unit
 ) {
     val isEdit = !isNewCounter
@@ -72,7 +72,10 @@ fun EditScreen(
     var stepText by rememberSaveable { mutableStateOf("1") }
     var startingCountText by rememberSaveable { mutableStateOf("0") }
     var startDateText by rememberSaveable { mutableStateOf("") }
+    var targetCountText by rememberSaveable { mutableStateOf("") }
+    var deadlineDateText by rememberSaveable { mutableStateOf("") }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    var showDeadlinePicker by rememberSaveable { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     var loaded by remember { mutableStateOf(false) } // not saveable — derived from existingCounter
 
@@ -83,9 +86,12 @@ fun EditScreen(
     var originalStep by remember { mutableStateOf(existingCounter?.stepValue?.toString() ?: "1") }
     var originalStartingCount by remember { mutableStateOf(existingCounter?.startingCount?.toString() ?: "0") }
     var originalStartDate by remember { mutableStateOf(existingCounter?.startDate ?: "") }
+    var originalTargetCount by remember { mutableStateOf(existingCounter?.targetCount?.toString() ?: "") }
+    var originalDeadlineDate by remember { mutableStateOf(existingCounter?.deadlineDate ?: "") }
 
     val hasChanges = loaded && (name != originalName || icon != originalIcon || selectedColorHex != originalColorHex ||
-            stepText != originalStep || startingCountText != originalStartingCount || startDateText != originalStartDate)
+            stepText != originalStep || startingCountText != originalStartingCount || startDateText != originalStartDate ||
+            targetCountText != originalTargetCount || deadlineDateText != originalDeadlineDate)
 
     // For new counters, track changes once the user modifies anything from defaults
     val hasNewCounterChanges = !isEdit && name.isNotBlank()
@@ -123,6 +129,8 @@ fun EditScreen(
             stepText = existingCounter.stepValue.toString()
             startingCountText = existingCounter.startingCount.toString()
             startDateText = existingCounter.startDate ?: ""
+            targetCountText = existingCounter.targetCount?.toString() ?: ""
+            deadlineDateText = existingCounter.deadlineDate ?: ""
             // Snapshot originals for change detection
             originalName = name
             originalIcon = icon
@@ -130,6 +138,8 @@ fun EditScreen(
             originalStep = stepText
             originalStartingCount = startingCountText
             originalStartDate = startDateText
+            originalTargetCount = targetCountText
+            originalDeadlineDate = deadlineDateText
             loaded = true
         }
         // Only mark loaded for genuinely new counters, not edit-mode loading
@@ -157,14 +167,17 @@ fun EditScreen(
                         animationSpec = tween(300),
                         label = "saveColor"
                     )
+                    val doSave = {
+                        val step = stepText.toIntOrNull() ?: 1
+                        val starting = startingCountText.toIntOrNull() ?: 0
+                        val date = startDateText.ifBlank { null }
+                        val target = targetCountText.toIntOrNull()?.takeIf { it > 0 }
+                        val deadline = if (target != null) deadlineDateText.ifBlank { null } else null
+                        if (name.isNotBlank()) onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date, target, deadline)
+                    }
                     if (showSaveButton) {
                         FilledTonalButton(
-                            onClick = {
-                                val step = stepText.toIntOrNull() ?: 1
-                                val starting = startingCountText.toIntOrNull() ?: 0
-                                val date = startDateText.ifBlank { null }
-                                onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date)
-                            },
+                            onClick = { doSave() },
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = saveButtonColor.copy(alpha = 0.85f),
                                 contentColor = Color.White
@@ -177,12 +190,7 @@ fun EditScreen(
                         }
                     } else {
                         IconButton(
-                            onClick = {
-                                val step = stepText.toIntOrNull() ?: 1
-                                val starting = startingCountText.toIntOrNull() ?: 0
-                                val date = startDateText.ifBlank { null }
-                                if (name.isNotBlank()) onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date)
-                            },
+                            onClick = { doSave() },
                             enabled = name.isNotBlank()
                         ) {
                             Icon(Icons.Default.Check, contentDescription = "Save")
@@ -269,7 +277,7 @@ fun EditScreen(
                     }
                 }
                 Text(
-                    "When you started tracking",
+                    "For accurate averages on migrated activities",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 16.dp, top = 4.dp)
@@ -305,6 +313,94 @@ fun EditScreen(
                     }
                 ) {
                     DatePicker(state = datePickerState)
+                }
+            }
+
+            // Target count
+            OutlinedTextField(
+                value = targetCountText,
+                onValueChange = { targetCountText = it.filter { c -> c.isDigit() } },
+                label = { Text("Target Count (optional)") },
+                supportingText = { Text("Goal to reach") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Deadline date — only show when target count is set
+            if (targetCountText.isNotBlank() && (targetCountText.toIntOrNull() ?: 0) > 0) {
+                val displayDeadline = if (deadlineDateText.isNotBlank()) {
+                    try {
+                        LocalDate.parse(deadlineDateText).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
+                    } catch (_: Exception) { deadlineDateText }
+                } else null
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("Deadline (optional)", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                            .clickable { showDeadlinePicker = true }
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = displayDeadline ?: "Tap to select deadline",
+                            color = if (displayDeadline != null) MaterialTheme.colorScheme.onSurface
+                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 16.sp
+                        )
+                        if (displayDeadline != null) {
+                            Text(
+                                text = "✕",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.clickable { deadlineDateText = "" }
+                            )
+                        }
+                    }
+                    Text(
+                        "Date to reach target by",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
+
+                if (showDeadlinePicker) {
+                    val deadlinePickerState = rememberDatePickerState(
+                        initialSelectedDateMillis = if (deadlineDateText.isNotBlank()) {
+                            try {
+                                LocalDate.parse(deadlineDateText)
+                                    .atStartOfDay(ZoneOffset.UTC)
+                                    .toInstant()
+                                    .toEpochMilli()
+                            } catch (_: Exception) { null }
+                        } else null
+                    )
+                    DatePickerDialog(
+                        onDismissRequest = { showDeadlinePicker = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                deadlinePickerState.selectedDateMillis?.let { millis ->
+                                    deadlineDateText = Instant.ofEpochMilli(millis)
+                                        .atZone(ZoneOffset.UTC)
+                                        .toLocalDate()
+                                        .toString()
+                                }
+                                showDeadlinePicker = false
+                            }) { Text("OK") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeadlinePicker = false }) { Text("Cancel") }
+                        }
+                    ) {
+                        DatePicker(state = deadlinePickerState)
+                    }
                 }
             }
 

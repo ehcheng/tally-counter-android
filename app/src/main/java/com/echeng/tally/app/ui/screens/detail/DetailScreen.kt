@@ -173,13 +173,21 @@ fun DetailScreen(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val currentTotal = counter.startingCount + entries.sumOf { it.count }
                     Text(
-                        formatCount(counter.startingCount + entries.sumOf { it.count }),
+                        formatCount(currentTotal),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
-                    Text("total", fontSize = 12.sp, color = TextSecondary)
+                    if (counter.targetCount != null && counter.targetCount > 0) {
+                        val remaining = counter.targetCount - currentTotal
+                        Text(
+                            "(${if (remaining > 0) "-" else "+"}${formatCount(kotlin.math.abs(remaining))})",
+                            fontSize = 14.sp,
+                            color = if (remaining > 0) TextTertiary else counterColor
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -228,7 +236,7 @@ fun DetailScreen(
         ) {
             // Stats ribbon
             item {
-                StatsRibbon(entries = entries, counterColor = counterColor, startingCount = counter.startingCount, startDate = counter.startDate)
+                StatsRibbon(entries = entries, counterColor = counterColor, startingCount = counter.startingCount, startDate = counter.startDate, targetCount = counter.targetCount, deadlineDate = counter.deadlineDate)
             }
 
             // Chart range selector
@@ -382,11 +390,16 @@ fun DetailScreen(
     }
 }
 
-private data class RibbonStats(val totalCount: Int, val perDay: Float)
+private data class RibbonStats(
+    val totalCount: Int,
+    val perDay: Float,
+    val targetPerDay: Float? = null, // required pace to hit target by deadline
+    val targetCount: Int? = null
+)
 
 @Composable
-fun StatsRibbon(entries: List<CounterEntry>, counterColor: Color, startingCount: Int, startDate: String?) {
-    val stats = remember(entries, startingCount, startDate) {
+fun StatsRibbon(entries: List<CounterEntry>, counterColor: Color, startingCount: Int, startDate: String?, targetCount: Int? = null, deadlineDate: String? = null) {
+    val stats = remember(entries, startingCount, startDate, targetCount, deadlineDate) {
         val totalCount = startingCount + entries.sumOf { it.count }
         if (totalCount == 0) return@remember null
 
@@ -399,23 +412,73 @@ fun StatsRibbon(entries: List<CounterEntry>, counterColor: Color, startingCount:
             maxOf(1, ChronoUnit.DAYS.between(start, LocalDate.now()).toInt() + 1)
         } catch (_: Exception) { 1 }
 
-        RibbonStats(totalCount, totalCount.toFloat() / daysSinceStart)
+        val perDay = totalCount.toFloat() / daysSinceStart
+
+        // Calculate required pace: target / total days in period (start to deadline)
+        val targetPerDay = if (targetCount != null && targetCount > 0 && !deadlineDate.isNullOrBlank()) {
+            try {
+                val start = when {
+                    !startDate.isNullOrBlank() -> LocalDate.parse(startDate)
+                    entries.isNotEmpty() -> LocalDate.parse(entries.minBy { it.date }.date)
+                    else -> LocalDate.now()
+                }
+                val deadline = LocalDate.parse(deadlineDate)
+                val totalDaysInPeriod = maxOf(1, ChronoUnit.DAYS.between(start, deadline).toInt())
+                targetCount.toFloat() / totalDaysInPeriod
+            } catch (_: Exception) { null }
+        } else null
+
+        RibbonStats(totalCount, perDay, targetPerDay, targetCount)
     } ?: return
 
     val totalCount = stats.totalCount
     val perDay = stats.perDay
+    val cap = stats.targetCount ?: Int.MAX_VALUE
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(DarkCard)
-            .padding(vertical = 14.dp, horizontal = 8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+            .padding(vertical = 14.dp, horizontal = 8.dp)
     ) {
-        StatColumn("Per Day", formatCount(perDay.toInt()), counterColor, modifier = Modifier.weight(1f))
-        StatColumn("Per Week", formatCount(minOf((perDay * 7).toInt(), totalCount)), counterColor, modifier = Modifier.weight(1f))
-        StatColumn("Per Month", formatCount(minOf((perDay * 30).toInt(), totalCount)), counterColor, modifier = Modifier.weight(1f))
-        StatColumn("Per Year", formatCount(minOf((perDay * 365).toInt(), totalCount)), counterColor, modifier = Modifier.weight(1f))
+        // Actual pace row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatColumn("Per Day", formatCount(minOf(perDay.toInt(), cap)), counterColor, modifier = Modifier.weight(1f))
+            StatColumn("Per Week", formatCount(minOf((perDay * 7).toInt(), cap, totalCount)), counterColor, modifier = Modifier.weight(1f))
+            StatColumn("Per Month", formatCount(minOf((perDay * 30).toInt(), cap, totalCount)), counterColor, modifier = Modifier.weight(1f))
+            StatColumn("Per Year", formatCount(minOf((perDay * 365).toInt(), cap, totalCount)), counterColor, modifier = Modifier.weight(1f))
+        }
+
+        // Pace diff row — only when target + deadline both exist
+        if (stats.targetPerDay != null && stats.targetCount != null) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                val tpd = stats.targetPerDay
+                // Diff = actual pace - required pace (positive = ahead, negative = behind)
+                // Each period is capped by target count
+                val multipliers = listOf(1f, 7f, 30f, 365f)
+                multipliers.forEach { mult ->
+                    val actualPace = minOf((perDay * mult).toInt(), cap, totalCount)
+                    val requiredPace = minOf((tpd * mult).toInt(), cap)
+                    val diff = actualPace - requiredPace
+                    val text = if (diff >= 0) "(+${formatCount(diff)})" else "(-${formatCount(-diff)})"
+                    val color = if (diff >= 0) counterColor.copy(alpha = 0.7f) else TextTertiary
+                    Text(
+                        text,
+                        fontSize = 12.sp,
+                        color = color,
+                        modifier = Modifier.weight(1f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        }
     }
 }
 

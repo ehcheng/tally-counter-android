@@ -13,6 +13,8 @@ data class Counter(
     val stepValue: Int = 1,
     val startingCount: Int = 0,
     val startDate: String? = null, // ISO date (yyyy-MM-dd) for migration
+    val targetCount: Int? = null, // optional goal count
+    val deadlineDate: String? = null, // ISO date (yyyy-MM-dd) deadline for target
     val sortOrder: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
 )

@@ -23,13 +23,13 @@ class EditViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun saveCounter(name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int, startDate: String?, onDone: () -> Unit) {
+    fun saveCounter(name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int, startDate: String?, targetCount: Int?, deadlineDate: String?, onDone: () -> Unit) {
         viewModelScope.launch {
             val existing = _counter.value
             if (existing != null) {
-                repo.updateCounter(existing.copy(name = name, icon = icon, colorHex = colorHex, stepValue = stepValue, startingCount = startingCount, startDate = startDate))
+                repo.updateCounter(existing.copy(name = name, icon = icon, colorHex = colorHex, stepValue = stepValue, startingCount = startingCount, startDate = startDate, targetCount = targetCount, deadlineDate = deadlineDate))
             } else {
-                repo.createCounter(name, icon, colorHex, stepValue, startingCount, startDate)
+                repo.createCounter(name, icon, colorHex, stepValue, startingCount, startDate, targetCount, deadlineDate)
             }
             onDone()
         }

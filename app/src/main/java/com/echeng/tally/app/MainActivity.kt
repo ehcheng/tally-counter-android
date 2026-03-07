@@ -116,8 +116,8 @@ fun TallyApp(settingsVm: SettingsViewModel, onBurst: (TapBurst) -> Unit = {}) {
             EditScreen(
                 existingCounter = null,
                 isNewCounter = true,
-                onSave = { name, icon, color, step, starting, startDate ->
-                    vm.saveCounter(name, icon, color, step, starting, startDate) { navController.popBackStack() }
+                onSave = { name, icon, color, step, starting, startDate, targetCount, deadlineDate ->
+                    vm.saveCounter(name, icon, color, step, starting, startDate, targetCount, deadlineDate) { navController.popBackStack() }
                 },
                 onBack = { navController.popBackStack() }
             )
@@ -133,8 +133,8 @@ fun TallyApp(settingsVm: SettingsViewModel, onBurst: (TapBurst) -> Unit = {}) {
             val counter by vm.counter.collectAsState()
             EditScreen(
                 existingCounter = counter,
-                onSave = { name, icon, color, step, starting, startDate ->
-                    vm.saveCounter(name, icon, color, step, starting, startDate) { navController.popBackStack() }
+                onSave = { name, icon, color, step, starting, startDate, targetCount, deadlineDate ->
+                    vm.saveCounter(name, icon, color, step, starting, startDate, targetCount, deadlineDate) { navController.popBackStack() }
                 },
                 onBack = { navController.popBackStack() }
             )

@@ -19,10 +19,10 @@ class CounterRepository(
 
     suspend fun getCounter(id: Long): Counter? = counterDao.getCounterById(id)
 
-    suspend fun createCounter(name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int = 0, startDate: String? = null): Long {
+    suspend fun createCounter(name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int = 0, startDate: String? = null, targetCount: Int? = null, deadlineDate: String? = null): Long {
         val sortOrder = counterDao.getNextSortOrder()
         return counterDao.insert(
-            Counter(name = name, icon = icon, colorHex = colorHex, stepValue = stepValue, startingCount = startingCount, startDate = startDate, sortOrder = sortOrder)
+            Counter(name = name, icon = icon, colorHex = colorHex, stepValue = stepValue, startingCount = startingCount, startDate = startDate, targetCount = targetCount, deadlineDate = deadlineDate, sortOrder = sortOrder)
         )
     }
 
