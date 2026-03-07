@@ -309,13 +309,13 @@ fun DetailScreen(
                             editingEntry = entry
                             editText = entry.count.toString()
                         }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
                             .width(3.dp)
-                            .height(40.dp)
+                            .height(28.dp)
                             .clip(RoundedCornerShape(2.dp))
                             .background(counterColor)
                     )
@@ -326,19 +326,18 @@ fun DetailScreen(
                         color = TextPrimary,
                         modifier = Modifier.weight(1f)
                     )
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            "+${formatCount(entry.count)}",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 16.sp,
-                            color = counterColor,
-                        )
-                        Text(
-                            "= ${formatCount(runningTotal)}",
-                            fontSize = 12.sp,
-                            color = TextTertiary,
-                        )
-                    }
+                    Text(
+                        "+${formatCount(entry.count)}",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = counterColor,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "= ${formatCount(runningTotal)}",
+                        fontSize = 13.sp,
+                        color = TextTertiary,
+                    )
                 }
                 HorizontalDivider(
                     modifier = Modifier.padding(start = 31.dp, end = 16.dp),
@@ -410,22 +409,22 @@ fun StatsRibbon(entries: List<CounterEntry>, counterColor: Color, startingCount:
         modifier = Modifier
             .fillMaxWidth()
             .background(DarkCard)
-            .padding(vertical = 16.dp, horizontal = 12.dp),
+            .padding(vertical = 14.dp, horizontal = 8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        StatColumn("Per Day", formatCount(perDay.toInt()), counterColor)
-        StatColumn("Per Week", formatCount(minOf((perDay * 7).toInt(), totalCount)), counterColor)
-        StatColumn("Per Month", formatCount(minOf((perDay * 30).toInt(), totalCount)), counterColor)
-        StatColumn("Per Year", formatCount(minOf((perDay * 365).toInt(), totalCount)), counterColor)
+        StatColumn("Per Day", formatCount(perDay.toInt()), counterColor, modifier = Modifier.weight(1f))
+        StatColumn("Per Week", formatCount(minOf((perDay * 7).toInt(), totalCount)), counterColor, modifier = Modifier.weight(1f))
+        StatColumn("Per Month", formatCount(minOf((perDay * 30).toInt(), totalCount)), counterColor, modifier = Modifier.weight(1f))
+        StatColumn("Per Year", formatCount(minOf((perDay * 365).toInt(), totalCount)), counterColor, modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
-fun StatColumn(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = color)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(label, fontSize = 11.sp, color = TextTertiary)
+fun StatColumn(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = color, maxLines = 1)
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(label, fontSize = 12.sp, color = TextTertiary)
     }
 }
 
@@ -436,11 +435,12 @@ fun MiniStatCard(label: String, value: String, color: Color) {
         colors = CardDefaults.cardColors(containerColor = DarkCard)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(value, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = color)
-            Text(label, fontSize = 11.sp, color = TextTertiary)
+            Text(value, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = color)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(label, fontSize = 13.sp, color = TextTertiary)
         }
     }
 }
