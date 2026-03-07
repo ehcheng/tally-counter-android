@@ -43,6 +43,8 @@ object ExportHelper {
                 put("stepValue", c.stepValue)
                 put("startingCount", c.startingCount)
                 if (c.startDate != null) put("startDate", c.startDate)
+                if (c.targetCount != null) put("targetCount", c.targetCount)
+                if (c.deadlineDate != null) put("deadlineDate", c.deadlineDate)
                 put("sortOrder", c.sortOrder)
                 put("createdAt", c.createdAt)
             })
@@ -104,6 +106,8 @@ object ExportHelper {
                 stepValue = c.optInt("stepValue", 1),
                 startingCount = c.optInt("startingCount", 0),
                 startDate = c.optString("startDate", "").takeIf { it.isNotEmpty() && it != "null" },
+                targetCount = if (c.has("targetCount") && !c.isNull("targetCount")) c.getInt("targetCount") else null,
+                deadlineDate = c.optString("deadlineDate", "").takeIf { it.isNotEmpty() && it != "null" },
                 sortOrder = c.optInt("sortOrder", 0),
                 createdAt = c.optLong("createdAt", System.currentTimeMillis())
             )
