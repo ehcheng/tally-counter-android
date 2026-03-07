@@ -14,10 +14,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 object AutoBackup {
-    private const val MAX_BACKUPS = 10
+    private const val MAX_BACKUPS = 30
     private const val INTERNAL_DIR = "backups"
     private const val DOWNLOADS_SUBDIR = "tally-auto-backups"
     private const val FILE_PREFIX = "tally-"
+    private val DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    @Deprecated("For parsing legacy backups only")
     private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")
 
     /** Result of a backup attempt — no more silent failures. */
@@ -48,13 +50,13 @@ object AutoBackup {
 
             val entries = db.counterEntryDao().getAllEntries()
             val json = ExportHelper.toJson(counters, entries, settings)
-            val timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT)
-            val filename = "$FILE_PREFIX$timestamp.json"
+            val today = LocalDateTime.now().format(DATE_FORMAT)
+            val filename = "$FILE_PREFIX$today.json"
 
-            // 1. Internal backup
+            // 1. Internal backup (overwrites today's file)
             saveInternal(context, filename, json)
 
-            // 2. Downloads/tally-auto-backups/
+            // 2. Downloads/tally-auto-backups/ (overwrites today's file)
             saveToDownloads(context, filename, json)
 
             android.util.Log.i("AutoBackup", "Backup saved: $filename (${counters.size} counters, ${entries.size} entries)")
@@ -72,10 +74,12 @@ object AutoBackup {
     private fun saveInternal(context: Context, filename: String, json: String) {
         val backupDir = File(context.filesDir, INTERNAL_DIR)
         backupDir.mkdirs()
+        // Overwrites today's file if it exists (daily rolling)
         File(backupDir, filename).writeText(json)
 
+        // Prune old daily backups beyond retention limit
         backupDir.listFiles { f -> isBackupFile(f) }
-            ?.sortedByDescending { it.lastModified() }
+            ?.sortedByDescending { it.name } // date-based names sort chronologically
             ?.drop(MAX_BACKUPS)
             ?.forEach { it.delete() }
     }
@@ -95,9 +99,9 @@ object AutoBackup {
             val mimeTypes = Array(allFiles.size) { "application/json" }
             MediaScannerConnection.scanFile(context, allFiles, mimeTypes, null)
 
-            // Prune old downloads backups too
+            // Prune old daily backups beyond retention limit
             backupDir.listFiles { f -> isBackupFile(f) }
-                ?.sortedByDescending { it.lastModified() }
+                ?.sortedByDescending { it.name }
                 ?.drop(MAX_BACKUPS)
                 ?.forEach { it.delete() }
 

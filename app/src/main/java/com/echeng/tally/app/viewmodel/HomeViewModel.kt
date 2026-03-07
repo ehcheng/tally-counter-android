@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.echeng.tally.app.data.db.AppDatabase
 import com.echeng.tally.app.data.entity.Counter
 import com.echeng.tally.app.data.repository.CounterRepository
+import com.echeng.tally.app.util.AutoBackup
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -25,6 +27,26 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _todayCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
     val todayCounts: StateFlow<Map<Long, Int>> = _todayCounts.asStateFlow()
+
+    /** Debounced backup — fires 5s after the last tap */
+    private var backupJob: Job? = null
+    private val BACKUP_DEBOUNCE_MS = 5000L
+
+    private fun scheduleDebouncedBackup() {
+        backupJob?.cancel()
+        backupJob = viewModelScope.launch {
+            delay(BACKUP_DEBOUNCE_MS)
+            AutoBackup.performBackup(getApplication())
+        }
+    }
+
+    /** Force immediate backup (e.g., on app going to background) */
+    fun backupNow() {
+        backupJob?.cancel()
+        viewModelScope.launch {
+            AutoBackup.performBackup(getApplication())
+        }
+    }
 
     private val _totalCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
     val totalCounts: StateFlow<Map<Long, Int>> = _totalCounts.asStateFlow()
@@ -71,6 +93,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         _todayCounts.update { it + (counter.id to (it[counter.id] ?: 0) + counter.stepValue) }
         _totalCounts.update { it + (counter.id to (it[counter.id] ?: 0) + counter.stepValue) }
         viewModelScope.launch { repo.incrementToday(counter.id, counter.stepValue) }
+        scheduleDebouncedBackup()
     }
 
     fun decrement(counter: Counter) {
@@ -80,6 +103,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         _todayCounts.update { it + (counter.id to newToday) }
         _totalCounts.update { it + (counter.id to maxOf(counter.startingCount, (it[counter.id] ?: 0) - diff)) }
         viewModelScope.launch { repo.decrementToday(counter.id, counter.stepValue) }
+        scheduleDebouncedBackup()
     }
 
     fun moveCounterUp(counterId: Long) {

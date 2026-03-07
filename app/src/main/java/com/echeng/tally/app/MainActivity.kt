@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -77,6 +80,18 @@ fun TallyApp(settingsVm: SettingsViewModel, onBurst: (TapBurst) -> Unit = {}) {
             val todayCounts by vm.todayCounts.collectAsState()
             val totalCounts by vm.totalCounts.collectAsState()
 
+            // Backup when app goes to background
+            val lifecycleOwner = LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_STOP) {
+                        vm.backupNow()
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
+
             HomeScreen(
                 counters = counters,
                 todayCounts = todayCounts,
@@ -100,6 +115,7 @@ fun TallyApp(settingsVm: SettingsViewModel, onBurst: (TapBurst) -> Unit = {}) {
             val vm: EditViewModel = viewModel()
             EditScreen(
                 existingCounter = null,
+                isNewCounter = true,
                 onSave = { name, icon, color, step, starting, startDate ->
                     vm.saveCounter(name, icon, color, step, starting, startDate) { navController.popBackStack() }
                 },

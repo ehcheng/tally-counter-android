@@ -15,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.*
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.*
@@ -59,10 +61,11 @@ private val EmojiOptions = listOf(
 @Composable
 fun EditScreen(
     existingCounter: Counter?,
+    isNewCounter: Boolean = false,
     onSave: (name: String, icon: String, colorHex: String, stepValue: Int, startingCount: Int, startDate: String?) -> Unit,
     onBack: () -> Unit
 ) {
-    val isEdit = existingCounter != null
+    val isEdit = !isNewCounter
     var name by rememberSaveable { mutableStateOf("") }
     var icon by rememberSaveable { mutableStateOf("💪") }
     var selectedColorHex by rememberSaveable { mutableStateOf("#FFFF3B5C") }
@@ -129,7 +132,8 @@ fun EditScreen(
             originalStartDate = startDateText
             loaded = true
         }
-        if (existingCounter == null) loaded = true // new counter
+        // Only mark loaded for genuinely new counters, not edit-mode loading
+        if (existingCounter == null && isNewCounter) loaded = true
     }
 
     Scaffold(
@@ -144,16 +148,45 @@ fun EditScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            val step = stepText.toIntOrNull() ?: 1
-                            val starting = startingCountText.toIntOrNull() ?: 0
-                            val date = startDateText.ifBlank { null }
-                            if (name.isNotBlank()) onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date)
-                        },
-                        enabled = name.isNotBlank()
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = "Save")
+                    val showSaveButton = name.isNotBlank() && (hasChanges || hasNewCounterChanges)
+                    val saveButtonColor by animateColorAsState(
+                        targetValue = if (showSaveButton) {
+                            try { Color(android.graphics.Color.parseColor(selectedColorHex)) }
+                            catch (_: Exception) { MaterialTheme.colorScheme.primary }
+                        } else Color.Transparent,
+                        animationSpec = tween(300),
+                        label = "saveColor"
+                    )
+                    if (showSaveButton) {
+                        FilledTonalButton(
+                            onClick = {
+                                val step = stepText.toIntOrNull() ?: 1
+                                val starting = startingCountText.toIntOrNull() ?: 0
+                                val date = startDateText.ifBlank { null }
+                                onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date)
+                            },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = saveButtonColor.copy(alpha = 0.85f),
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Save", fontWeight = FontWeight.Bold)
+                        }
+                    } else {
+                        IconButton(
+                            onClick = {
+                                val step = stepText.toIntOrNull() ?: 1
+                                val starting = startingCountText.toIntOrNull() ?: 0
+                                val date = startDateText.ifBlank { null }
+                                if (name.isNotBlank()) onSave(name.trim(), icon, selectedColorHex, maxOf(1, step), maxOf(0, starting), date)
+                            },
+                            enabled = name.isNotBlank()
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = "Save")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
