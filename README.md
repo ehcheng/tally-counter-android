@@ -26,6 +26,8 @@
 - **OLED dark theme** — pure black background, easy on eyes and battery
 - **History & charts** — daily stats, trends over time (7d/30d/90d/all), min/max tracking
 - **Smart averages** — set a start date for accurate per-day/week/month/year rates
+- **🎯 Target count & deadline** — set a goal and a deadline, see your pace vs. required pace
+- **Pace tracking** — real-time diff shows if you're ahead or behind your target
 - **Data you own** — local-only storage, CSV export, JSON backup/restore, auto-backup to Downloads
 - **Migration-friendly** — starting count + start date for switching from other apps
 
@@ -89,15 +91,25 @@ cd tally-counter-android
 - **Choreographer-driven particles**: Hardware-synced animations that work on all devices (including Samsung)
 - **18ms percussive tick**: Layered multi-frequency sound designed to feel mechanical and satisfying
 
-## 📊 Stats
+## 📊 Stats & Targets
 
 The detail screen shows rate-based statistics:
 
 - **Per Day/Week/Month/Year** = total count ÷ days since start, projected out (capped at total)
 - **Min / Today / Max** = based on daily entry values (excludes starting count)
-- **Total** = starting count + all recorded entries
 
-Set a **start date** when migrating from another app so your averages stay accurate.
+### 🎯 Target Count & Deadline
+
+Set an optional **target count** and **deadline date** to enable pace tracking:
+
+- **Remaining count** — shown below the total in the bottom bar as `(-N)`
+- **Pace diff row** — appears below the Per Day/Week/Month/Year stats showing whether you're ahead `(+N)` or behind `(-N)` the required pace
+- **Required pace** = target count ÷ total days from start to deadline
+- **Diff** = your actual pace − required pace
+
+Example: 50,000 push-up goal over 365 days = 137/day required. If you're averaging 119/day, you'll see `(-18)` under Per Day.
+
+Set a **start date** when migrating from another app so your averages and pace calculations stay accurate.
 
 ## 💾 Data & Backup
 
